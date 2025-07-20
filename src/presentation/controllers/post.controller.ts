@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { injectable, inject } from 'inversify';
-import { IPostService } from '../../application/services/post.service';
+import { NextFunction, Request, Response } from 'express';
+import { inject, injectable } from 'inversify';
 import { IAuditService } from '../../application/services/audit.service';
+import { IPostService } from '../../application/services/post.service';
 import { ResponseUtil } from '../../shared/utils/response.util';
 
 @injectable()
@@ -25,8 +25,10 @@ export class PostController {
         action: 'POST_CREATED',
         entityType: 'Post',
         entityId: post.id,
-        newValues: post,
         userId: req.user.id,
+        timestamp: new Date(),
+        newValues: { title: post.title, content: post.content },
+        id: ''
       });
 
       ResponseUtil.created(res, post, 'Post created successfully');
@@ -37,6 +39,10 @@ export class PostController {
 
   async findById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      if (!req.params.id) {
+        ResponseUtil.badRequest(res, 'Post ID is required');
+        return;
+      }
       const post = await this.postService.findById(req.params.id);
       ResponseUtil.success(res, post, 'Post retrieved successfully');
     } catch (error) {
@@ -46,6 +52,10 @@ export class PostController {
 
   async findBySlug(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      if (!req.params.slug) {
+        ResponseUtil.badRequest(res, 'Post slug is required');
+        return;
+      }
       const post = await this.postService.findBySlug(req.params.slug);
       ResponseUtil.success(res, post, 'Post retrieved successfully');
     } catch (error) {
@@ -63,7 +73,7 @@ export class PostController {
         status: req.query.status as string,
         tags: req.query.tags ? (req.query.tags as string).split(',') : undefined,
       };
-
+      
       const result = await this.postService.findMany(query);
       ResponseUtil.success(res, result, 'Posts retrieved successfully');
     } catch (error) {
@@ -79,6 +89,11 @@ export class PostController {
         sortBy: req.query.sortBy as string,
         sortOrder: req.query.sortOrder as 'asc' | 'desc',
       };
+
+      if (!req.params.authorId) {
+        ResponseUtil.badRequest(res, 'Author ID is required');
+        return;
+      }
 
       const result = await this.postService.findByAuthor(req.params.authorId, query);
       ResponseUtil.success(res, result, 'Posts retrieved successfully');
@@ -107,6 +122,11 @@ export class PostController {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const postId = req.params.id;
+
+      if (!postId) {
+        ResponseUtil.badRequest(res, 'Post ID is required');
+        return;
+      }
       const oldPost = await this.postService.findById(postId);
       const updatedPost = await this.postService.update(postId, req.body);
 
@@ -115,9 +135,11 @@ export class PostController {
         action: 'POST_UPDATED',
         entityType: 'Post',
         entityId: postId,
-        oldValues: oldPost,
-        newValues: updatedPost,
+        oldValues: { title: oldPost.title, content: oldPost.content },
+        newValues: { title: updatedPost.title, content: updatedPost.content },
         userId: req.user.id,
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.success(res, updatedPost, 'Post updated successfully');
@@ -129,6 +151,10 @@ export class PostController {
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const postId = req.params.id;
+      if (!postId) {
+        ResponseUtil.badRequest(res, 'Post ID is required');
+        return;
+      }
       const post = await this.postService.findById(postId);
       await this.postService.delete(postId);
 
@@ -137,8 +163,10 @@ export class PostController {
         action: 'POST_DELETED',
         entityType: 'Post',
         entityId: postId,
-        oldValues: post,
+        oldValues: { title: post.title, content: post.content },
         userId: req.user.id,
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.noContent(res, 'Post deleted successfully');

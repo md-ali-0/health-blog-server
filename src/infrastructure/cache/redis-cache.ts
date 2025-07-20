@@ -9,6 +9,7 @@ export class RedisCache implements ICache {
   private client: Redis;
 
   constructor(@inject('ILogger') private logger: ILogger) {
+
     this.client = new Redis(config.redis.url, {
       maxRetriesPerRequest: 3,
       lazyConnect: true,

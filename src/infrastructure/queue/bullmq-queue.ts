@@ -62,17 +62,17 @@ export class BullMQQueue implements IJobQueue {
     this.logger.info(`Job added to queue: ${queueName}/${jobName}`);
   }
 
-  async isHealthy(): Promise<boolean> {
-    try {
-      const emailQueue = this.queues.get('email');
-      if (!emailQueue) return false;
+async isHealthy(): Promise<boolean> {
+  try {
+    const emailQueue = this.queues.get('email');
+    if (!emailQueue) return false;
       
-      await emailQueue.getWaiting();
-      return true;
-    } catch {
-      return false;
-    }
+    await emailQueue.getWaiting(); // <-- This tries a Redis command
+    return true;
+  } catch {
+    return false;
   }
+}
 
   private async processEmailJob(job: Job): Promise<void> {
     const { to, subject, text, html } = job.data;

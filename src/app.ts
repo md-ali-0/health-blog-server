@@ -40,7 +40,7 @@ export class App {
 
             // Initialize cache connection
             await this.cache.connect();
-            this.logger.info("Cache connected successfully");
+            // this.logger.info("Cache connected successfully");
 
             // Start server
             const port = config.server.port;

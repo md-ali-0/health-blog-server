@@ -7,31 +7,31 @@ export interface IDatabase {
     getClient(): PrismaClient;
 }
 
-export class Database implements IDatabase {
-    private prisma: PrismaClient;
+// export class Database implements IDatabase {
+//     private prisma: PrismaClient;
 
-    constructor() {
-        this.prisma = new PrismaClient();
-    }
+//     constructor() {
+//         this.prisma = new PrismaClient();
+//     }
 
-    async connect(): Promise<void> {
-        await this.prisma.$connect();
-    }
+//     async connect(): Promise<void> {
+//         await this.prisma.$connect();
+//     }
 
-    async disconnect(): Promise<void> {
-        await this.prisma.$disconnect();
-    }
+//     async disconnect(): Promise<void> {
+//         await this.prisma.$disconnect();
+//     }
 
-    getClient(): PrismaClient {
-        return this.prisma;
-    }
+//     getClient(): PrismaClient {
+//         return this.prisma;
+//     }
 
-    async isHealthy(): Promise<boolean> {
-        try {
-            await this.prisma.$queryRaw`SELECT 1`;
-            return true;
-        } catch (error) {
-            return false;
-        }
-    }
-}
+//     async isHealthy(): Promise<boolean> {
+//         try {
+//             await this.prisma.$queryRaw`SELECT 1`;
+//             return true;
+//         } catch (error) {
+//             return false;
+//         }
+//     }
+// }

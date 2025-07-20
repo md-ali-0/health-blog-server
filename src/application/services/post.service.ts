@@ -1,20 +1,18 @@
 import { inject, injectable } from "inversify";
 import {
-  CreatePostData,
-  Post,
-  UpdatePostData,
+    Post,
 } from "../../domain/entities/post.entity";
 import { IPostRepository } from "../../domain/repositories/post.repository";
 import { NotFoundError } from "../../shared/errors/not-found.error";
 import {
-  PaginationQuery,
-  PaginationResult,
-  SearchQuery,
+    PaginationQuery,
+    PaginationResult,
+    SearchQuery,
 } from "../../shared/types/common.types";
 import { SlugUtil } from "../../shared/utils/slug.util";
 
 export interface IPostService {
-    create(data: CreatePostData): Promise<Post>;
+    create(data: Post): Promise<Post>;
     findById(id: string): Promise<Post>;
     findBySlug(slug: string): Promise<Post>;
     findMany(
@@ -24,7 +22,7 @@ export interface IPostService {
         authorId: string,
         query: PaginationQuery
     ): Promise<PaginationResult<Post>>;
-    update(id: string, data: UpdatePostData): Promise<Post>;
+    update(id: string, data: Post): Promise<Post>;
     delete(id: string): Promise<void>;
     search(
         searchTerm: string,
@@ -38,7 +36,7 @@ export class PostService implements IPostService {
         @inject("IPostRepository") private postRepository: IPostRepository
     ) {}
 
-    async create(data: CreatePostData): Promise<Post> {
+    async create(data: Post): Promise<Post> {
         // Generate unique slug
         const baseSlug = SlugUtil.generate(data.title);
         const existingSlugs = await this.postRepository.findSimilarSlugs(
@@ -81,7 +79,7 @@ export class PostService implements IPostService {
         return await this.postRepository.findByAuthor(authorId, query);
     }
 
-    async update(id: string, data: UpdatePostData): Promise<Post> {
+    async update(id: string, data: Post): Promise<Post> {
         const existingPost = await this.postRepository.findById(id);
         if (!existingPost) {
             throw new NotFoundError("Post", id);

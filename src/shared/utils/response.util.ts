@@ -30,4 +30,14 @@ export class ResponseUtil {
       status: 'success',
     });
   }
+  static badRequest(
+    res: Response,
+    message = 'Bad request',
+    statusCode = 400
+  ): Response {
+    return res.status(statusCode).json({
+      message,
+      status: 'error',
+    });
+  }
 }

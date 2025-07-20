@@ -1,14 +1,14 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { inject, injectable } from "inversify";
 import {
-  CreateUserData,
-  UpdateUserData,
-  User,
+    CreateUserData,
+    UpdateUserData,
+    User,
 } from "../../domain/entities/user.entity";
 import { IUserRepository } from "../../domain/repositories/user.repository";
 import {
-  PaginationQuery,
-  PaginationResult,
+    PaginationQuery,
+    PaginationResult,
 } from "../../shared/types/common.types";
 import { IDatabase } from "../database/database.interface";
 

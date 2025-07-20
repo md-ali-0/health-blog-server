@@ -11,10 +11,10 @@ export interface ApiError {
 }
 
 export interface PaginationQuery {
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  page?: number | undefined;
+  limit?: number | undefined;
+  sortBy?: string | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 export interface PaginationResult<T> {
@@ -30,7 +30,7 @@ export interface PaginationResult<T> {
 }
 
 export interface SearchQuery {
-  q?: string;
-  tags?: string[];
-  status?: string;
+  q?: string | undefined;
+  tags?: string[] | undefined;
+  status?: string | undefined;
 }

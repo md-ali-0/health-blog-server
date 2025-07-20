@@ -1,10 +1,9 @@
-import dotenv from "dotenv";
 import "reflect-metadata";
 import { App } from "./app";
 import { container } from "./config/container";
 
 // Load environment variables
-dotenv.config();
+// dotenv.config();
 
 async function bootstrap(): Promise<void> {
     try {

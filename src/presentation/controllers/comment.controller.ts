@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { injectable, inject } from 'inversify';
-import { ICommentService } from '../../application/services/comment.service';
+import { NextFunction, Request, Response } from 'express';
+import { inject, injectable } from 'inversify';
 import { IAuditService } from '../../application/services/audit.service';
+import { ICommentService } from '../../application/services/comment.service';
 import { ResponseUtil } from '../../shared/utils/response.util';
 
 @injectable()
@@ -25,8 +25,10 @@ export class CommentController {
         action: 'COMMENT_CREATED',
         entityType: 'Comment',
         entityId: comment.id,
-        newValues: comment,
         userId: req.user.id,
+        newValues: { content: comment.content, postId: comment.postId },
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.created(res, comment, 'Comment created successfully');
@@ -37,6 +39,10 @@ export class CommentController {
 
   async findById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      if (!req.params.id) {
+        ResponseUtil.badRequest(res, 'Comment ID is required');
+        return;
+      }
       const comment = await this.commentService.findById(req.params.id);
       ResponseUtil.success(res, comment, 'Comment retrieved successfully');
     } catch (error) {
@@ -52,7 +58,10 @@ export class CommentController {
         sortBy: req.query.sortBy as string,
         sortOrder: req.query.sortOrder as 'asc' | 'desc',
       };
-
+      if (!req.params.postId) {
+        ResponseUtil.badRequest(res, 'Post ID is required');
+        return;
+      }
       const result = await this.commentService.findByPost(req.params.postId, query);
       ResponseUtil.success(res, result, 'Comments retrieved successfully');
     } catch (error) {
@@ -69,6 +78,10 @@ export class CommentController {
         sortOrder: req.query.sortOrder as 'asc' | 'desc',
       };
 
+      if (!req.params.parentId) {
+        ResponseUtil.badRequest(res, 'Parent comment ID is required');
+        return;
+      }
       const result = await this.commentService.findReplies(req.params.parentId, query);
       ResponseUtil.success(res, result, 'Replies retrieved successfully');
     } catch (error) {
@@ -79,6 +92,10 @@ export class CommentController {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const commentId = req.params.id;
+      if (!commentId) {
+        ResponseUtil.badRequest(res, 'Comment ID is required');
+        return;
+      }
       const oldComment = await this.commentService.findById(commentId);
       const updatedComment = await this.commentService.update(commentId, req.body);
 
@@ -87,9 +104,11 @@ export class CommentController {
         action: 'COMMENT_UPDATED',
         entityType: 'Comment',
         entityId: commentId,
-        oldValues: oldComment,
-        newValues: updatedComment,
         userId: req.user.id,
+        oldValues: { content: oldComment.content, postId: oldComment.postId },
+        newValues: { content: updatedComment.content, postId: updatedComment.postId },
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.success(res, updatedComment, 'Comment updated successfully');
@@ -101,6 +120,10 @@ export class CommentController {
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const commentId = req.params.id;
+      if (!commentId) {
+        ResponseUtil.badRequest(res, 'Comment ID is required');
+        return;
+      }
       const comment = await this.commentService.findById(commentId);
       await this.commentService.delete(commentId);
 
@@ -109,8 +132,10 @@ export class CommentController {
         action: 'COMMENT_DELETED',
         entityType: 'Comment',
         entityId: commentId,
-        oldValues: comment,
         userId: req.user.id,
+        oldValues: { content: comment.content, postId: comment.postId },
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.noContent(res, 'Comment deleted successfully');

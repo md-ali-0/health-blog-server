@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { config } from '../../config/config';
 import { CreateUserData, User } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository';
@@ -107,11 +107,16 @@ export class AuthService implements IAuthService {
     }
   }
 
-  private generateToken(userId: string): string {
-    return jwt.sign(
-      { userId },
-      config.jwt.secret,
-      { expiresIn: config.jwt.expiresIn }
-    );
+private generateToken(userId: string): string {
+  const payload = { userId };
+
+  const options: SignOptions = {};
+
+  if (config.jwt.expiresIn) {
+    options.expiresIn = config.jwt.expiresIn as any; // "1d", "2h", ইত্যাদি
   }
+
+  return jwt.sign(payload, config.jwt.secret, options);
+}
+
 }

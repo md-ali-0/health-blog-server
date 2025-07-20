@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { injectable, inject } from 'inversify';
+import { NextFunction, Request, Response } from 'express';
+import { inject, injectable } from 'inversify';
 import { IAuditService } from '../../application/services/audit.service';
 import { ResponseUtil } from '../../shared/utils/response.util';
 
@@ -36,7 +36,7 @@ export class AuditController {
         sortOrder: req.query.sortOrder as 'asc' | 'desc',
       };
 
-      const result = await this.auditService.findByUser(req.params.userId, query);
+      const result = await this.auditService.findByUser(req?.params?.userId as string, query);
       ResponseUtil.success(res, result, 'User audit logs retrieved successfully');
     } catch (error) {
       next(error);
@@ -46,7 +46,7 @@ export class AuditController {
   async findByEntity(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { entityType, entityId } = req.params;
-      const result = await this.auditService.findByEntity(entityType, entityId);
+      const result = await this.auditService.findByEntity(entityType as string, entityId as string);
       ResponseUtil.success(res, result, 'Entity audit logs retrieved successfully');
     } catch (error) {
       next(error);

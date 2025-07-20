@@ -1,16 +1,15 @@
 import { inject, injectable } from "inversify";
 import {
-  AuditLog,
-  CreateAuditLogData,
+    AuditLog
 } from "../../domain/entities/audit-log.entity";
 import { IAuditLogRepository } from "../../domain/repositories/audit-log.repository";
 import {
-  PaginationQuery,
-  PaginationResult,
+    PaginationQuery,
+    PaginationResult,
 } from "../../shared/types/common.types";
 
 export interface IAuditService {
-    log(data: CreateAuditLogData): Promise<AuditLog>;
+    log(data: AuditLog): Promise<AuditLog>;
     findMany(
         query: PaginationQuery & { userId?: string; entityType?: string }
     ): Promise<PaginationResult<AuditLog>>;
@@ -28,7 +27,7 @@ export class AuditService implements IAuditService {
         private auditLogRepository: IAuditLogRepository
     ) {}
 
-    async log(data: CreateAuditLogData): Promise<AuditLog> {
+    async log(data: AuditLog): Promise<AuditLog> {
         return await this.auditLogRepository.create(data);
     }
 

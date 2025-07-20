@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { injectable, inject } from 'inversify';
-import { IAuthService } from '../../application/services/auth.service';
+import { NextFunction, Request, Response } from 'express';
+import { inject, injectable } from 'inversify';
 import { IAuditService } from '../../application/services/audit.service';
+import { IAuthService } from '../../application/services/auth.service';
 import { ResponseUtil } from '../../shared/utils/response.util';
 
 @injectable()
@@ -22,6 +22,8 @@ export class AuthController {
         entityId: result.user.id,
         newValues: { email: result.user.email, username: result.user.username },
         userId: result.user.id,
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.created(res, result, 'User registered successfully');
@@ -40,6 +42,8 @@ export class AuthController {
         entityType: 'User',
         entityId: result.user.id,
         userId: result.user.id,
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.success(res, result, 'Login successful');
@@ -56,6 +60,8 @@ export class AuthController {
         entityType: 'User',
         entityId: req.user.id,
         userId: req.user.id,
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.success(res, null, 'Logout successful');

@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { injectable, inject } from 'inversify';
-import { IUserService } from '../../application/services/user.service';
+import { NextFunction, Request, Response } from 'express';
+import { inject, injectable } from 'inversify';
 import { IAuditService } from '../../application/services/audit.service';
+import { IUserService } from '../../application/services/user.service';
 import { ResponseUtil } from '../../shared/utils/response.util';
 
 @injectable()
@@ -13,6 +13,10 @@ export class UserController {
 
   async findById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      if (!req.params.id) {
+        ResponseUtil.badRequest(res, "User id Required");
+        return
+      }
       const user = await this.userService.findById(req.params.id);
       ResponseUtil.success(res, user, 'User retrieved successfully');
     } catch (error) {
@@ -39,6 +43,10 @@ export class UserController {
   async update(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.params.id;
+            if (!userId) {
+        ResponseUtil.badRequest(res, "User id Required");
+        return
+      }
       const oldUser = await this.userService.findById(userId);
       const updatedUser = await this.userService.update(userId, req.body);
 
@@ -50,6 +58,8 @@ export class UserController {
         oldValues: oldUser,
         newValues: updatedUser,
         userId: req.user.id,
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.success(res, updatedUser, 'User updated successfully');
@@ -61,6 +71,10 @@ export class UserController {
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.params.id;
+      if (!userId) {
+        ResponseUtil.badRequest(res, "User id Required");
+        return
+      }
       const user = await this.userService.findById(userId);
       await this.userService.delete(userId);
 
@@ -71,6 +85,8 @@ export class UserController {
         entityId: userId,
         oldValues: user,
         userId: req.user.id,
+        timestamp: new Date(),
+        id: ''
       });
 
       ResponseUtil.noContent(res, 'User deleted successfully');

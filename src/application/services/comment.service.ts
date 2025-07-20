@@ -1,10 +1,10 @@
-import { injectable, inject } from 'inversify';
+import { inject, injectable } from 'inversify';
+import { Comment, CreateCommentData, UpdateCommentData } from '../../domain/entities/comment.entity';
 import { ICommentRepository } from '../../domain/repositories/comment.repository';
 import { IPostRepository } from '../../domain/repositories/post.repository';
 import { IJobQueue } from '../../infrastructure/queue/queue.interface';
-import { Comment, CreateCommentData, UpdateCommentData } from '../../domain/entities/comment.entity';
-import { PaginationQuery, PaginationResult } from '../../shared/types/common.types';
 import { NotFoundError } from '../../shared/errors/not-found.error';
+import { PaginationQuery, PaginationResult } from '../../shared/types/common.types';
 
 export interface ICommentService {
   create(data: CreateCommentData): Promise<Comment>;
@@ -23,7 +23,7 @@ export class CommentService implements ICommentService {
     @inject('IJobQueue') private jobQueue: IJobQueue
   ) {}
 
-  async create(data: CreateCommentData): Promise<Comment> {
+  async create(data: Comment): Promise<Comment> {
     // Verify post exists
     const post = await this.postRepository.findById(data.postId);
     if (!post) {
