@@ -1,5 +1,5 @@
-import { AuditLog, CreateAuditLogData } from '../entities/audit-log.entity';
 import { PaginationQuery, PaginationResult } from '../../shared/types/common.types';
+import { AuditLog, CreateAuditLogData } from '../entities/audit-log.entity';
 
 export interface IAuditLogRepository {
   create(data: CreateAuditLogData): Promise<AuditLog>;

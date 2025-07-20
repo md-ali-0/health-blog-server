@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { Container } from 'inversify';
+import { LoginSchema, RegisterSchema } from '../../shared/validation/schemas';
 import { AuthController } from '../controllers/auth.controller';
 import { authenticate } from '../middleware/auth.middleware';
-import { validateBody } from '../middleware/validation.middleware';
 import { authRateLimit, loginBruteForce, registerBruteForce } from '../middleware/security.middleware';
-import { RegisterSchema, LoginSchema } from '../../shared/validation/schemas';
+import { validateBody } from '../middleware/validation.middleware';
 
 export function authRoutes(container: Container): Router {
   const router = Router();

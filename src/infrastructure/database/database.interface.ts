@@ -4,8 +4,6 @@ export interface IDatabase {
     connect(): Promise<void>;
     disconnect(): Promise<void>;
     isHealthy(): Promise<boolean>;
-
-    // নতুন মেথড যোগ করা হলো
     getClient(): PrismaClient;
 }
 

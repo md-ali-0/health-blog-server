@@ -1,7 +1,7 @@
-import { injectable, inject } from 'inversify';
 import { PrismaClient } from '@prisma/client';
-import { ICommentRepository } from '../../domain/repositories/comment.repository';
+import { inject, injectable } from 'inversify';
 import { Comment, CreateCommentData, UpdateCommentData } from '../../domain/entities/comment.entity';
+import { ICommentRepository } from '../../domain/repositories/comment.repository';
 import { PaginationQuery, PaginationResult } from '../../shared/types/common.types';
 import { IDatabase } from '../database/database.interface';
 

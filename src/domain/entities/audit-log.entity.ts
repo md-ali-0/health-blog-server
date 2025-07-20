@@ -15,5 +15,6 @@ export interface CreateAuditLogData {
   entityId?: string;
   oldValues?: Record<string, unknown>;
   newValues?: Record<string, unknown>;
+  timestamp: Date;
   userId: string;
 }

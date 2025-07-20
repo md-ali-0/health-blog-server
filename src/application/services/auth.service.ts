@@ -1,11 +1,11 @@
-import { injectable, inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 import jwt from 'jsonwebtoken';
+import { config } from '../../config/config';
+import { CreateUserData, User } from '../../domain/entities/user.entity';
 import { IUserRepository } from '../../domain/repositories/user.repository';
-import { User, CreateUserData } from '../../domain/entities/user.entity';
-import { PasswordUtil } from '../../shared/utils/password.util';
 import { AuthError } from '../../shared/errors/auth.error';
 import { ConflictError } from '../../shared/errors/conflict.error';
-import { config } from '../../config/config';
+import { PasswordUtil } from '../../shared/utils/password.util';
 
 export interface LoginData {
   email: string;

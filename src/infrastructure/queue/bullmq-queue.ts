@@ -1,9 +1,8 @@
-import { injectable, inject } from 'inversify';
-import { Queue, Worker, Job } from 'bullmq';
-import { IJobQueue, JobData } from './queue.interface';
+import { Job, Queue, Worker } from 'bullmq';
+import { inject, injectable } from 'inversify';
 import { ILogger } from '../../shared/interfaces/logger.interface';
 import { IEmailService } from '../email/email.interface';
-import { config } from '../../config/config';
+import { IJobQueue, JobData } from './queue.interface';
 
 @injectable()
 export class BullMQQueue implements IJobQueue {
