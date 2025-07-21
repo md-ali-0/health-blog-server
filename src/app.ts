@@ -3,8 +3,8 @@ import { inject, injectable } from "inversify";
 import { config } from "./config/config";
 import { ICache } from "./infrastructure/cache/cache.interface";
 import { IDatabase } from "./infrastructure/database/database.interface";
-import { setupMiddleware } from "./presentation/middleware";
-import { errorHandler } from "./presentation/middleware/error-handler";
+import { errorHandler } from "./presentation/middleware/error-handler.middleware";
+import { setupMiddleware } from "./presentation/middleware/index.middleware";
 import { setupRoutes } from "./presentation/routes";
 import { ILogger } from "./shared/interfaces/logger.interface";
 
@@ -22,14 +22,14 @@ export class App {
     }
 
     private setupApplication(): void {
-        // Setup middleware
-        setupMiddleware(this.app);
+        // Setup essential middleware (Helmet, CORS, etc.)
+        setupMiddleware(this.app, this.logger);
 
-        // Setup routes
+        // Setup API routes
         setupRoutes(this.app);
 
-        // Error handling middleware (must be last)
-        this.app.use(errorHandler);
+        // Centralized error handling middleware (must be last)
+        this.app.use(errorHandler(this.logger));
     }
 
     public async start(): Promise<void> {
@@ -40,7 +40,7 @@ export class App {
 
             // Initialize cache connection
             await this.cache.connect();
-            // this.logger.info("Cache connected successfully");
+            this.logger.info("Cache connected successfully");
 
             // Start server
             const port = config.server.port;
@@ -50,10 +50,13 @@ export class App {
                 this.logger.info(
                     `Health check available at http://localhost:${port}/api/v1/health`
                 );
+                this.logger.info(
+                    `API documentation available at http://localhost:${port}/api-docs`
+                );
             });
         } catch (error) {
             this.logger.error("Failed to start application", error);
-            throw error;
+            process.exit(1);
         }
     }
 
