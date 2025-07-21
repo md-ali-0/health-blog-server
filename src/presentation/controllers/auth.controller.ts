@@ -1,81 +1,58 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
-import { IAuditService } from '../../application/services/audit.service';
 import { IAuthService } from '../../application/services/auth.service';
+import { IAuditService } from '../../application/services/audit.service';
+import { IJobQueue } from '../../infrastructure/queue/queue.interface';
+import { catchAsync } from '../../shared/utils/catch-async.util';
 import { ResponseUtil } from '../../shared/utils/response.util';
 
 @injectable()
 export class AuthController {
   constructor(
     @inject('IAuthService') private authService: IAuthService,
+    @inject('IJobQueue') private jobQueue: IJobQueue,
     @inject('IAuditService') private auditService: IAuditService
   ) {}
 
-  async register(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const result = await this.authService.register(req.body);
-      
-      // Log audit
-      await this.auditService.log({
-        action: 'USER_REGISTERED',
-        entityType: 'User',
-        entityId: result.user.id,
-        newValues: { email: result.user.email, username: result.user.username },
-        userId: result.user.id,
-        timestamp: new Date(),
-        id: ''
-      });
+  public register = catchAsync(async (req: Request, res: Response) => {
+    const { name, email, password } = req.body;
+    const user = await this.authService.register({ name, email, password });
 
-      ResponseUtil.created(res, result, 'User registered successfully');
-    } catch (error) {
-      next(error);
-    }
-  }
+    // Dispatch a background job to send a welcome email
+    await this.jobQueue.addJob('email', 'sendWelcomeEmail', {
+      to: user.email,
+      subject: 'Welcome to Health Blog!',
+      text: `Hi ${user.name},\n\nWelcome to our platform. We are excited to have you.`,
+      html: `<b>Hi ${user.name},</b><br><br>Welcome to our platform. We are excited to have you.`,
+    });
 
-  async login(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const result = await this.authService.login(req.body);
-      
-      // Log audit
-      await this.auditService.log({
-        action: 'USER_LOGIN',
-        entityType: 'User',
-        entityId: result.user.id,
-        userId: result.user.id,
-        timestamp: new Date(),
-        id: ''
-      });
+    // Create an audit log
+    await this.auditService.log({
+      actionType: 'USER_REGISTER',
+      entity: 'User',
+      entityId: user.id,
+      userId: user.id,
+      newValues: { email: user.email, name: user.name },
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+    });
 
-      ResponseUtil.success(res, result, 'Login successful');
-    } catch (error) {
-      next(error);
-    }
-  }
+    ResponseUtil.sendSuccess(res, 'User registered successfully. Please check your email.', { user });
+  });
 
-  async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      // Log audit
-      await this.auditService.log({
-        action: 'USER_LOGOUT',
-        entityType: 'User',
-        entityId: req.user.id,
-        userId: req.user.id,
-        timestamp: new Date(),
-        id: ''
-      });
+  public login = catchAsync(async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    const { user, token } = await this.authService.login(email, password);
 
-      ResponseUtil.success(res, null, 'Logout successful');
-    } catch (error) {
-      next(error);
-    }
-  }
+    await this.auditService.log({
+        actionType: 'USER_LOGIN_SUCCESS',
+        entity: 'User',
+        entityId: user.id,
+        userId: user.id,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+    });
 
-  async me(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { password: _, ...userWithoutPassword } = req.user;
-      ResponseUtil.success(res, userWithoutPassword, 'User profile retrieved');
-    } catch (error) {
-      next(error);
-    }
-  }
+    ResponseUtil.sendSuccess(res, 'Login successful', { user, token });
+  });
 }

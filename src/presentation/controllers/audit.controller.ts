@@ -1,55 +1,33 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
-import { IAuditService } from '../../application/services/audit.service';
+import { IAuditLogRepository } from '../../domain/repositories/audit-log.repository';
+import { catchAsync } from '../../shared/utils/catch-async.util';
 import { ResponseUtil } from '../../shared/utils/response.util';
 
 @injectable()
 export class AuditController {
   constructor(
-    @inject('IAuditService') private auditService: IAuditService
+    @inject('IAuditLogRepository') private auditLogRepository: IAuditLogRepository
   ) {}
 
-  async findMany(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const query = {
-        page: parseInt(req.query.page as string) || 1,
-        limit: parseInt(req.query.limit as string) || 10,
-        sortBy: req.query.sortBy as string,
-        sortOrder: req.query.sortOrder as 'asc' | 'desc',
-        userId: req.query.userId as string,
-        entityType: req.query.entityType as string,
-      };
+  public getAuditLogs = catchAsync(async (req: Request, res: Response) => {
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 20;
+    const skip = (page - 1) * limit;
 
-      const result = await this.auditService.findMany(query);
-      ResponseUtil.success(res, result, 'Audit logs retrieved successfully');
-    } catch (error) {
-      next(error);
-    }
-  }
+    const [logs, total] = await Promise.all([
+      this.auditLogRepository.findMany({ skip, take: limit }),
+      this.auditLogRepository.count(),
+    ]);
 
-  async findByUser(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const query = {
-        page: parseInt(req.query.page as string) || 1,
-        limit: parseInt(req.query.limit as string) || 10,
-        sortBy: req.query.sortBy as string,
-        sortOrder: req.query.sortOrder as 'asc' | 'desc',
-      };
+    const response = {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      data: logs,
+    };
 
-      const result = await this.auditService.findByUser(req?.params?.userId as string, query);
-      ResponseUtil.success(res, result, 'User audit logs retrieved successfully');
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async findByEntity(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const { entityType, entityId } = req.params;
-      const result = await this.auditService.findByEntity(entityType as string, entityId as string);
-      ResponseUtil.success(res, result, 'Entity audit logs retrieved successfully');
-    } catch (error) {
-      next(error);
-    }
-  }
+    ResponseUtil.sendSuccess(res, 'Audit logs retrieved successfully', response);
+  });
 }

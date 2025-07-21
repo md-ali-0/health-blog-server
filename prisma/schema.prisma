@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,54 +10,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  EDITOR
-  READER
-}
-
-enum PostStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  username  String   @unique
-  firstName String?
-  lastName  String?
+  name      String?
   password  String
-  role      Role     @default(READER)
-  isActive  Boolean  @default(true)
+  role      Role     @default(USER)
+  posts     Post[]
+  comments  Comment[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  posts    Post[]
-  comments Comment[]
-  auditLogs AuditLog[]
 
   @@map("users")
 }
 
 model Post {
-  id          String     @id @default(cuid())
-  title       String
-  slug        String     @unique
-  content     String
-  excerpt     String?
-  status      PostStatus @default(DRAFT)
-  imageUrl    String?
-  tags        String[]
-  publishedAt DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  comments Comment[]
+  id        String    @id @default(cuid())
+  title     String
+  content   String
+  published Boolean   @default(false)
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  String
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@map("posts")
 }
@@ -62,34 +41,33 @@ model Post {
 model Comment {
   id        String   @id @default(cuid())
   content   String
-  isActive  Boolean  @default(true)
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  postId String
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  parentId String?
-  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies  Comment[] @relation("CommentReplies")
 
   @@map("comments")
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  action     String
-  entityType String
-  entityId   String?
-  oldValues  Json?
-  newValues  Json?
-  timestamp  DateTime @default(now())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String?   // Can be null for system actions
+  actionType  String    // e.g., 'CREATE_POST', 'DELETE_COMMENT', 'USER_LOGIN_FAILED'
+  entity      String    // e.g., 'Post', 'Comment', 'User'
+  entityId    String?   // The ID of the affected entity
+  oldValues   Json?     // Previous state of the data
+  newValues   Json?     // New state of the data
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
 
   @@map("audit_logs")
+}
+
+enum Role {
+  USER
+  ADMIN
+  EDITOR
 }

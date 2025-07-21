@@ -1,119 +1,67 @@
-import { inject, injectable } from "inversify";
-import {
-    Post,
-} from "../../domain/entities/post.entity";
-import { IPostRepository } from "../../domain/repositories/post.repository";
-import { NotFoundError } from "../../shared/errors/not-found.error";
-import {
-    PaginationQuery,
-    PaginationResult,
-    SearchQuery,
-} from "../../shared/types/common.types";
-import { SlugUtil } from "../../shared/utils/slug.util";
+import { inject, injectable } from 'inversify';
+import { Post } from '@prisma/client';
+import { IPostRepository } from '../../domain/repositories/post.repository';
+import { ICache } from '../../infrastructure/cache/cache.interface';
+import { AppError } from '../../shared/errors/app.error';
+import { StatusCodes } from 'http-status-codes';
 
 export interface IPostService {
-    create(data: Post): Promise<Post>;
-    findById(id: string): Promise<Post>;
-    findBySlug(slug: string): Promise<Post>;
-    findMany(
-        query: PaginationQuery & SearchQuery
-    ): Promise<PaginationResult<Post>>;
-    findByAuthor(
-        authorId: string,
-        query: PaginationQuery
-    ): Promise<PaginationResult<Post>>;
-    update(id: string, data: Post): Promise<Post>;
-    delete(id: string): Promise<void>;
-    search(
-        searchTerm: string,
-        query: PaginationQuery
-    ): Promise<PaginationResult<Post>>;
+  createPost(data: { title: string; content: string; authorId: string }): Promise<Post>;
+  getPostById(id: string): Promise<Post | null>;
+  updatePost(id: string, data: { title?: string; content?: string }): Promise<Post>;
+  deletePost(id: string): Promise<void>;
 }
 
 @injectable()
 export class PostService implements IPostService {
-    constructor(
-        @inject("IPostRepository") private postRepository: IPostRepository
-    ) {}
+  private readonly cachePrefix = 'post:';
+  private readonly cacheTTL = 3600; // 1 hour in seconds
 
-    async create(data: Post): Promise<Post> {
-        // Generate unique slug
-        const baseSlug = SlugUtil.generate(data.title);
-        const existingSlugs = await this.postRepository.findSimilarSlugs(
-            baseSlug
-        );
-        const slug = SlugUtil.generateUnique(data.title, existingSlugs);
+  constructor(
+    @inject('IPostRepository') private postRepository: IPostRepository,
+    @inject('ICache') private cache: ICache
+  ) {}
 
-        return await this.postRepository.create({
-            ...data,
-            slug,
-        });
+  async createPost(data: { title: string; content: string; authorId: string }): Promise<Post> {
+    return this.postRepository.create(data);
+  }
+
+  async getPostById(id: string): Promise<Post | null> {
+    const cacheKey = `${this.cachePrefix}${id}`;
+    
+    // 1. Check cache first
+    const cachedPost = await this.cache.get<Post>(cacheKey);
+    if (cachedPost) {
+      return cachedPost;
     }
 
-    async findById(id: string): Promise<Post> {
-        const post = await this.postRepository.findById(id);
-        if (!post) {
-            throw new NotFoundError("Post", id);
-        }
-        return post;
+    // 2. If not in cache, get from database
+    const post = await this.postRepository.findById(id);
+    if (!post) {
+      throw new AppError(StatusCodes.NOT_FOUND, 'Post not found');
     }
 
-    async findBySlug(slug: string): Promise<Post> {
-        const post = await this.postRepository.findBySlug(slug);
-        if (!post) {
-            throw new NotFoundError("Post");
-        }
-        return post;
-    }
+    // 3. Store in cache for future requests
+    await this.cache.set(cacheKey, post, this.cacheTTL);
 
-    async findMany(
-        query: PaginationQuery & SearchQuery
-    ): Promise<PaginationResult<Post>> {
-        return await this.postRepository.findMany(query);
-    }
+    return post;
+  }
 
-    async findByAuthor(
-        authorId: string,
-        query: PaginationQuery
-    ): Promise<PaginationResult<Post>> {
-        return await this.postRepository.findByAuthor(authorId, query);
-    }
+  async updatePost(id: string, data: { title?: string; content?: string }): Promise<Post> {
+    const updatedPost = await this.postRepository.update(id, data);
+    
+    // Invalidate cache
+    const cacheKey = `${this.cachePrefix}${id}`;
+    await this.cache.del(cacheKey);
 
-    async update(id: string, data: Post): Promise<Post> {
-        const existingPost = await this.postRepository.findById(id);
-        if (!existingPost) {
-            throw new NotFoundError("Post", id);
-        }
+    return updatedPost;
+  }
 
-        // Generate new slug if title is updated
-        let updateData = { ...data };
-        if (data.title && data.title !== existingPost.title) {
-            const baseSlug = SlugUtil.generate(data.title);
-            const existingSlugs = await this.postRepository.findSimilarSlugs(
-                baseSlug
-            );
-            updateData.slug = SlugUtil.generateUnique(
-                data.title,
-                existingSlugs.filter((s) => s !== existingPost.slug)
-            );
-        }
+  async deletePost(id: string): Promise<void> {
+    await this.postRepository.delete(id);
 
-        return await this.postRepository.update(id, updateData);
-    }
-
-    async delete(id: string): Promise<void> {
-        const post = await this.postRepository.findById(id);
-        if (!post) {
-            throw new NotFoundError("Post", id);
-        }
-
-        await this.postRepository.delete(id);
-    }
-
-    async search(
-        searchTerm: string,
-        query: PaginationQuery
-    ): Promise<PaginationResult<Post>> {
-        return await this.postRepository.search(searchTerm, query);
-    }
+    // Invalidate cache
+    const cacheKey = `${this.cachePrefix}${id}`;
+    await this.cache.del(cacheKey);
+  }
 }

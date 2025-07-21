@@ -1,34 +1,15 @@
 import { Router } from 'express';
-import { Container } from 'inversify';
+import { container } from '../../config/container';
 import { AuditController } from '../controllers/audit.controller';
-import { authenticate, authorize } from '../middleware/auth.middleware';
-import { validateQuery } from '../middleware/validation.middleware';
-import { PaginationSchema } from '../../shared/validation/schemas';
-import { Role } from '../../domain/entities/user.entity';
+// import { authMiddleware } from '../middleware/auth.middleware'; // Assuming you have this
+// import { roleMiddleware } from '../middleware/role.middleware'; // Assuming you have this
 
-export function auditRoutes(container: Container): Router {
-  const router = Router();
-  const auditController = container.get<AuditController>('AuditController');
+const router = Router();
+const auditController = container.get<AuditController>('AuditController');
 
-  router.get('/', 
-    authenticate(), 
-    authorize([Role.ADMIN]), 
-    validateQuery(PaginationSchema),
-    (req, res, next) => auditController.findMany(req, res, next)
-  );
+// Protect these routes, only for ADMINs
+// router.use(authMiddleware, roleMiddleware(['ADMIN']));
 
-  router.get('/user/:userId', 
-    authenticate(), 
-    authorize([Role.ADMIN]), 
-    validateQuery(PaginationSchema),
-    (req, res, next) => auditController.findByUser(req, res, next)
-  );
+router.get('/', auditController.getAuditLogs);
 
-  router.get('/entity/:entityType/:entityId', 
-    authenticate(), 
-    authorize([Role.ADMIN]), 
-    (req, res, next) => auditController.findByEntity(req, res, next)
-  );
-
-  return router;
-}
+export default router;

@@ -1,6 +1,4 @@
-export interface JobData {
-  [key: string]: unknown;
-}
+export type JobData = Record<string, unknown>;
 
 export interface IJobQueue {
   connect(): Promise<void>;

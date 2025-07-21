@@ -1,37 +1,18 @@
-import { Application } from "express";
-import { container } from "../../config/container";
-import { auditRoutes } from "./audit.routes";
-import { authRoutes } from "./auth.routes";
-import { commentRoutes } from "./comment.routes";
-import { docsRoutes } from "./docs.routes";
-import { healthRoutes } from "./health.routes";
-import { metricsRoutes } from "./metrics.routes";
-import { postRoutes } from "./post.routes";
-import { userRoutes } from "./user.routes";
+import { Application, Router } from 'express';
+import authRoutes from './auth.routes';
+import postRoutes from './post.routes';
+import commentRoutes from './comment.routes';
+import healthRoutes from './health.routes';
+import auditRoutes from './audit.routes';
 
-export function setupRoutes(app: Application): void {
-    const basePath = "/api/v1";
+const router = Router();
 
-    // Documentation route (no auth required)
-    app.use("/api-docs", docsRoutes());
+router.use('/auth', authRoutes);
+router.use('/posts', postRoutes);
+router.use('/comments', commentRoutes);
+router.use('/health', healthRoutes);
+router.use('/audits', auditRoutes);
 
-    // Health and metrics (no auth required)
-    app.use(basePath, healthRoutes(container));
-    app.use(basePath, metricsRoutes(container));
-
-    // API routes
-    app.use(`${basePath}/auth`, authRoutes(container));
-    app.use(`${basePath}/users`, userRoutes(container));
-    app.use(`${basePath}/posts`, postRoutes(container));
-    app.use(`${basePath}/comments`, commentRoutes(container));
-    app.use(`${basePath}/audit`, auditRoutes(container));
-
-    // 404 handler for API routes
-    app.use(basePath + "/*", (req, res) => {
-        res.status(404).json({
-            error: "API route not found",
-            code: "NOT_FOUND",
-            details: { path: req.originalUrl },
-        });
-    });
-}
+export const setupRoutes = (app: Application): void => {
+  app.use('/api/v1', router);
+};

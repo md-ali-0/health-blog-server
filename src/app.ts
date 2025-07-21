@@ -3,6 +3,7 @@ import { inject, injectable } from "inversify";
 import { config } from "./config/config";
 import { ICache } from "./infrastructure/cache/cache.interface";
 import { IDatabase } from "./infrastructure/database/database.interface";
+import { IJobQueue } from "./infrastructure/queue/queue.interface";
 import { errorHandler } from "./presentation/middleware/error-handler.middleware";
 import { setupMiddleware } from "./presentation/middleware/index.middleware";
 import { setupRoutes } from "./presentation/routes";
@@ -15,7 +16,8 @@ export class App {
     constructor(
         @inject("ILogger") private logger: ILogger,
         @inject("IDatabase") private database: IDatabase,
-        @inject("ICache") private cache: ICache
+        @inject("ICache") private cache: ICache,
+        @inject("IJobQueue") private queue: IJobQueue
     ) {
         this.app = express();
         this.setupApplication();
@@ -40,7 +42,9 @@ export class App {
 
             // Initialize cache connection
             await this.cache.connect();
-            this.logger.info("Cache connected successfully");
+            
+            // Initialize job queue connection
+            await this.queue.connect();
 
             // Start server
             const port = config.server.port;

@@ -1,53 +1,25 @@
-import { inject, injectable } from "inversify";
-import {
-    AuditLog
-} from "../../domain/entities/audit-log.entity";
-import { IAuditLogRepository } from "../../domain/repositories/audit-log.repository";
-import {
-    PaginationQuery,
-    PaginationResult,
-} from "../../shared/types/common.types";
+import { inject, injectable } from 'inversify';
+import { CreateAuditLogDto, IAuditLogRepository } from '../../domain/repositories/audit-log.repository';
+import { ILogger } from '../../shared/interfaces/logger.interface';
 
 export interface IAuditService {
-    log(data: AuditLog): Promise<AuditLog>;
-    findMany(
-        query: PaginationQuery & { userId?: string; entityType?: string }
-    ): Promise<PaginationResult<AuditLog>>;
-    findByUser(
-        userId: string,
-        query: PaginationQuery
-    ): Promise<PaginationResult<AuditLog>>;
-    findByEntity(entityType: string, entityId: string): Promise<AuditLog[]>;
+  log(data: CreateAuditLogDto): Promise<void>;
 }
 
 @injectable()
 export class AuditService implements IAuditService {
-    constructor(
-        @inject("IAuditLogRepository")
-        private auditLogRepository: IAuditLogRepository
-    ) {}
+  constructor(
+    @inject('IAuditLogRepository') private auditLogRepository: IAuditLogRepository,
+    @inject('ILogger') private logger: ILogger
+  ) {}
 
-    async log(data: AuditLog): Promise<AuditLog> {
-        return await this.auditLogRepository.create(data);
+  async log(data: CreateAuditLogDto): Promise<void> {
+    try {
+      await this.auditLogRepository.create(data);
+    } catch (error) {
+      this.logger.error('Failed to create audit log', { error, data });
+      // We don't re-throw here because a failure to audit should not
+      // typically fail the primary user-facing operation.
     }
-
-    async findMany(
-        query: PaginationQuery & { userId?: string; entityType?: string }
-    ): Promise<PaginationResult<AuditLog>> {
-        return await this.auditLogRepository.findMany(query);
-    }
-
-    async findByUser(
-        userId: string,
-        query: PaginationQuery
-    ): Promise<PaginationResult<AuditLog>> {
-        return await this.auditLogRepository.findByUser(userId, query);
-    }
-
-    async findByEntity(
-        entityType: string,
-        entityId: string
-    ): Promise<AuditLog[]> {
-        return await this.auditLogRepository.findByEntity(entityType, entityId);
-    }
+  }
 }
