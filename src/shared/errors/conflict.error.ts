@@ -1,10 +1,8 @@
-import { BaseError } from './base.error';
+import { ApiError } from './ApiError';
 
-export class ConflictError extends BaseError {
-  public readonly statusCode = 409;
-  public readonly code = 'CONFLICT_ERROR';
-
-  constructor(message: string) {
-    super(message);
-  }
+export class ConflictError extends ApiError {
+    constructor(message: string) {
+        super(409, message, 'CONFLICT');
+        Object.setPrototypeOf(this, ConflictError.prototype);
+    }
 }

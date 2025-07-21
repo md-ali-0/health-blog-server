@@ -1,13 +1,8 @@
-import { BaseError } from './base.error';
+import { ApiError } from './ApiError';
 
-export class NotFoundError extends BaseError {
-  public readonly statusCode = 404;
-  public readonly code = 'NOT_FOUND';
-
-  constructor(resource: string, id?: string) {
-    const message = id 
-      ? `${resource} with id ${id} not found`
-      : `${resource} not found`;
-    super(message);
-  }
+export class NotFoundError extends ApiError {
+    constructor(entity: string, id: string | number) {
+        super(404, `${entity} with ID '${id}' not found`, 'NOT_FOUND');
+        Object.setPrototypeOf(this, NotFoundError.prototype);
+    }
 }

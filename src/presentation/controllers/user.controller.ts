@@ -3,6 +3,7 @@ import { inject, injectable } from 'inversify';
 import { IAuditService } from '../../application/services/audit.service';
 import { IUserService } from '../../application/services/user.service';
 import { ResponseUtil } from '../../shared/utils/response.util';
+import { BadRequestError } from '../../shared/errors/bad-request.error';
 
 @injectable()
 export class UserController {
@@ -11,21 +12,15 @@ export class UserController {
     @inject('IAuditService') private auditService: IAuditService
   ) {}
 
-  async findById(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
+  public findById = async (req: Request, res: Response): Promise<void> => {
       if (!req.params.id) {
-        ResponseUtil.badRequest(res, "User id Required");
-        return
+        throw new BadRequestError("User ID is required.");
       }
       const user = await this.userService.findById(req.params.id);
       ResponseUtil.success(res, user, 'User retrieved successfully');
-    } catch (error) {
-      next(error);
-    }
   }
 
-  async findMany(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
+  public findMany = async (req: Request, res: Response): Promise<void> => {
       const query = {
         page: parseInt(req.query.page as string) || 1,
         limit: parseInt(req.query.limit as string) || 10,
@@ -34,18 +29,13 @@ export class UserController {
       };
 
       const result = await this.userService.findMany(query);
-      ResponseUtil.success(res, result, 'Users retrieved successfully');
-    } catch (error) {
-      next(error);
-    }
+      ResponseUtil.paginated(res, result.data, { page: result.page, limit: result.limit, total: result.total });
   }
 
-  async update(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
+  public update = async (req: Request, res: Response): Promise<void> => {
       const userId = req.params.id;
-            if (!userId) {
-        ResponseUtil.badRequest(res, "User id Required");
-        return
+      if (!userId) {
+        throw new BadRequestError("User ID is required.");
       }
       const oldUser = await this.userService.findById(userId);
       const updatedUser = await this.userService.update(userId, req.body);
@@ -57,23 +47,18 @@ export class UserController {
         entityId: userId,
         oldValues: oldUser,
         newValues: updatedUser,
-        userId: req.user.id,
+        userId: req.user.id, // Assuming user is attached to request by auth middleware
         timestamp: new Date(),
         id: ''
       });
 
       ResponseUtil.success(res, updatedUser, 'User updated successfully');
-    } catch (error) {
-      next(error);
-    }
   }
 
-  async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
-    try {
+  public delete = async (req: Request, res: Response): Promise<void> => {
       const userId = req.params.id;
       if (!userId) {
-        ResponseUtil.badRequest(res, "User id Required");
-        return
+        throw new BadRequestError("User ID is required.");
       }
       const user = await this.userService.findById(userId);
       await this.userService.delete(userId);
@@ -84,14 +69,11 @@ export class UserController {
         entityType: 'User',
         entityId: userId,
         oldValues: user,
-        userId: req.user.id,
+        userId: req.user.id, // Assuming user is attached to request by auth middleware
         timestamp: new Date(),
         id: ''
       });
 
       ResponseUtil.noContent(res, 'User deleted successfully');
-    } catch (error) {
-      next(error);
-    }
   }
 }
